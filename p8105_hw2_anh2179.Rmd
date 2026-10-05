@@ -5,26 +5,162 @@ output: github_document
 date: "2026-10-02"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+## Problem 0
+```{r}
+library(tidyverse)
+library(readxl)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+## Probblem 1
+```{r}
+transit_df = read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |>
+  janitor::clean_names() |>
+  select(line,station_name,station_latitude,station_longitude,route1:route11,
+         entry,vending,entrance_type,ada) |>
+  mutate(entry = recode_values(entry,"YES" ~ TRUE,"NO" ~ FALSE)
+         ) |>
+  mutate(
+    across(route1:route11, as.character)
+  )
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+transit_df |>
+  distinct(station_name, line) |>
+  nrow()
+
+transit_df |>
+  filter(ada == TRUE) |>
+  distinct(station_name, line) |>
+  nrow()
+
+transit_df |>
+  filter(vending == "NO") |>
+  summarize(
+    proportion_entry = mean(entry)
+  )
+```
+```{r}
+transit_tidy = 
+  transit_df |>
+  pivot_longer(
+    route1:route11,
+    names_to = "route_number",
+    names_prefix = "route",
+    values_to = "route_name",
+    values_drop_na = TRUE
+  )
+    
+
+transit_tidy |>
+  filter(route_name == "A") |>
+  distinct(station_name, line) |>
+  nrow()
+
+transit_tidy |>
+  filter(
+    route_name == "A",
+    ada == TRUE
+  ) |>
+  distinct(station_name, line) |>
+  nrow()
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Problem 2
+
+```{r}
+mr_trash =
+  read_excel(
+    "202509 Trash Wheel Collection Data.xlsx",
+    sheet = "Mr. Trash Wheel",
+    range = "A2:N710"
+  ) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.integer(year),
+    sports_balls = as.integer(round(sports_balls)),
+    trash_wheel = "Mr. Trash Wheel"
+  )
+```
+
+
+```{r}
+professor_trash =
+  read_excel(
+    "202509 Trash Wheel Collection Data.xlsx",
+    sheet = "Professor Trash Wheel",
+    range = "A2:M135"
+  ) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.integer(year),
+    trash_wheel = "Professor Trash Wheel"
+  )
+```
+
+
+```{r}
+gwynnda =
+  read_excel(
+    "202509 Trash Wheel Collection Data.xlsx",
+    sheet = "Gwynns Falls Trash Wheel",
+    range = "A2:L352"
+  ) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.integer(year),
+    trash_wheel = "Gwynnda"
+  )
+```
+
+```{r}
+trash_wheel_df =
+  bind_rows(
+    mr_trash,
+    professor_trash,
+    gwynnda
+  )
+
+nrow(trash_wheel_df)
+
+
+```
+
+
+```{r}
+professor_weight =
+  trash_wheel_df |>
+  filter(trash_wheel == "Professor Trash Wheel") |>
+  summarize(
+    total_weight = sum(weight_tons, na.rm = TRUE)
+  ) |>
+  pull(total_weight)
+
+professor_weight
+```
+
+```{r}
+gwynnda_cigarettes =
+  trash_wheel_df |>
+  filter(
+    trash_wheel == "Gwynnda",
+    month == "June",
+    year == 2022
+  ) |>
+  summarize(
+    total_cigarette_butts = sum(cigarette_butts, na.rm = TRUE)
+  ) |>
+  pull(total_cigarette_butts)
+
+gwynnda_cigarettes
+
+
+```
+
