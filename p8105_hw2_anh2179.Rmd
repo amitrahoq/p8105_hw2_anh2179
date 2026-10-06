@@ -5,135 +5,130 @@ output: github_document
 date: "2026-10-02"
 ---
 
-## Problem 0
-```{r}
+# Problem 0
+```{r, message=FALSE}
 library(tidyverse)
 library(readxl)
 ```
 
 
-## Problem 1
+# Problem 1
 ```{r}
-transit_df = read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |>
+transit_df = 
+  read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+  col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) |>
+  
   janitor::clean_names() |>
-  select(line,station_name,station_latitude,station_longitude,route1:route11,
+  select(
+    line,station_name,station_latitude,station_longitude,starts_with("route"),
          entry,vending,entrance_type,ada) |>
-  mutate(entry = recode_values(entry,"YES" ~ TRUE,"NO" ~ FALSE)
-         ) |>
-  mutate(
-    across(route1:route11, as.character)
-  )
+  mutate(entry = recode_values(entry,"YES" ~ TRUE,"NO" ~ FALSE))
 ```
 
-
+### This dataset describes entrances and exits at New York City subway stations. It includes each station's line, name, and location (latitude and longitude), the routes it serves (route1–route11), and details about each entrance: whether it allows entry, whether it has a vending machine, its entrance type, and whether it is ADA compliant. We begin by importing the data, cleaning the variable names, and keeping only the columns needed for later parts of this problem. We convert entry from yes/no to a logical variable. During import, we also read route8–route11 as character so they match route1–route7. The resulting dataset has 1,868 rows and 19 columns. As it stands, these data are not tidy. Route number and route name should each be a single variable, but they are spread across 11 columns. To tidy the data, we would pivot the route columns from wide to long format.
 
 ```{r}
 transit_df |>
-  distinct(station_name, line) |>
+  select(station_name, line) |>
+  distinct() |>
   nrow()
+```
 
+
+```{r}
 transit_df |>
   filter(ada == TRUE) |>
-  distinct(station_name, line) |>
+  select(station_name, line) |>
+  distinct() |>
   nrow()
+```
 
+```{r}
 transit_df |>
   filter(vending == "NO") |>
-  summarize(
-    proportion_entry = mean(entry)
-  )
+  pull(entry) |>
+  mean()
 ```
+
+### Reformatting
 ```{r}
 transit_tidy = 
   transit_df |>
   pivot_longer(
     route1:route11,
-    names_to = "route_number",
-    names_prefix = "route",
+    names_to = "route_num",
     values_to = "route_name",
-    values_drop_na = TRUE
-  )
-    
+    ) |>
+  drop_na(route_name)
 
+# How many distinct stations serve the A train?
 transit_tidy |>
   filter(route_name == "A") |>
-  distinct(station_name, line) |>
+  select(station_name, line, route_name) |>
+  distinct() |>
   nrow()
 
+# Of the stations that serve the A train, how many are ADA compliant?
 transit_tidy |>
-  filter(
-    route_name == "A",
-    ada == TRUE
-  ) |>
-  distinct(station_name, line) |>
+  filter(route_name == "A",ada == TRUE) |> 
+  select(station_name, line, ada, route_name) |>
+  distinct() |>
   nrow()
-
 ```
 
 ## Problem 2
 
 ```{r}
-mr_trash =
+mr_trash_df =
   read_excel(
-    "202509 Trash Wheel Collection Data.xlsx",
+    "202610 Trash Wheel Collection Data.xlsx",
     sheet = "Mr. Trash Wheel",
-    range = "A2:N710"
+    range = "A2:N743"
   ) |>
   janitor::clean_names() |>
   drop_na(dumpster) |>
   mutate(
-    year = as.integer(year),
+    year= as.numeric(year), 
+    plastic_bottles = as.double(plastic_bottles),
     sports_balls = as.integer(round(sports_balls)),
     trash_wheel = "Mr. Trash Wheel"
   )
-```
 
-
-```{r}
 professor_trash =
   read_excel(
-    "202509 Trash Wheel Collection Data.xlsx",
+    "202610 Trash Wheel Collection Data.xlsx",
     sheet = "Professor Trash Wheel",
-    range = "A2:M135"
+    range = "A2:M140"
   ) |>
   janitor::clean_names() |>
   drop_na(dumpster) |>
   mutate(
-    year = as.integer(year),
+    year= as.numeric(year),
+    plastic_bottles = as.double(plastic_bottles),
     trash_wheel = "Professor Trash Wheel"
   )
-```
-
-
-```{r}
 gwynnda =
   read_excel(
-    "202509 Trash Wheel Collection Data.xlsx",
-    sheet = "Gwynns Falls Trash Wheel",
-    range = "A2:L352"
+    "202610 Trash Wheel Collection Data.xlsx",
+    sheet = "Gwynnda the Good Wheel of the W",
+    range = "A2:L395"
   ) |>
   janitor::clean_names() |>
   drop_na(dumpster) |>
   mutate(
-    year = as.integer(year),
+    year= as.numeric(year),
+    plastic_bottles = as.double(plastic_bottles),
     trash_wheel = "Gwynnda"
   )
-```
-
-```{r}
 trash_wheel_df =
   bind_rows(
-    mr_trash,
+    mr_trash_df,
     professor_trash,
     gwynnda
   )
-
-nrow(trash_wheel_df)
-
-
 ```
 
-
+## Weight 
 ```{r}
 professor_weight =
   trash_wheel_df |>
@@ -146,6 +141,8 @@ professor_weight =
 professor_weight
 ```
 
+
+## Cigs 
 ```{r}
 gwynnda_cigarettes =
   trash_wheel_df |>
@@ -169,7 +166,7 @@ gwynnda_cigarettes
 ```{r}
 mci_baseline =read_csv("MCI_baseline.csv",
     skip = 1,
-    na = "."
+    na = c(".", ",","NA")
   ) |>
   janitor::clean_names() |>
   mutate(
@@ -178,13 +175,11 @@ mci_baseline =read_csv("MCI_baseline.csv",
       1 ~ "Male",
       0 ~ "Female"
     ),
-    sex = as.factor(sex),
     apoe4 = case_match(
       apoe4,
       1 ~ "Carrier",
       0 ~ "Non-carrier"
     ),
-    apoe4 = as.factor(apoe4)
   ) |>
   filter(
     is.na(age_at_onset) | age_at_onset > current_age
@@ -193,6 +188,8 @@ mci_baseline =read_csv("MCI_baseline.csv",
 mci_baseline
 dim(mci_baseline)
 ```
+## Short Paragraph 
+inline 
 
 ```{r}
 mci_baseline |>
@@ -215,63 +212,41 @@ mci_baseline |>
     proportion_apoe4 = mean(apoe4 == "Carrier")
   )
 ```
-
+## Pargraph 
 ```{r}
 amyloid_df =
   read_csv("mci_amyloid.csv",
     skip = 1,
-    na = "Na"
+    na = c("Na", ".", ",")
   ) |>
   janitor::clean_names() |>
-  pivot_longer(
-    baseline:time_8,
-    names_to = "visit",
-    values_to = "amyloid_42_40"
-  ) |>
-  mutate(
-    visit = case_match(
-      visit,
-      "baseline" ~ 0,
-      "time_2" ~ 2,
-      "time_4" ~ 4,
-      "time_6" ~ 6,
-      "time_8" ~ 8
-    )
-  ) |>
-  drop_na(amyloid_42_40)
+  rename(
+    id = study_id,
+    baseline_years = baseline
+  )
 
 amyloid_df
 dim(amyloid_df)
-n_distinct(amyloid_df$study_id)
 ```
-
+## ## Paragraph 
 ```{r}
-baseline_only =
-  mci_baseline |>
-  filter(!(id %in% amyloid_df$study_id)) |>
-  distinct(id)
-
-print(baseline_only)
+mci_baseline |>
+  anti_join(amyloid_df, by = "id") |>
+  nrow()
+ amyloid_df |>
+  anti_join(mci_baseline, by = "id") |>
+  nrow()
 ```
-```{r}
-amyloid_only =
-  amyloid_df |>
-  filter(!(study_id %in% mci_baseline$id)) |>
-  distinct(study_id)
 
-print(amyloid_only)
-
-```
+## Paragraph 
 ```{r}
 mci_df =
-  inner_join(
-    mci_baseline,
-    amyloid_df,
-    by = c("id" = "study_id")
-  )
-
-mci_df
-dim(mci_df)
-n_distinct(mci_df$id)
+  inner_join( mci_baseline,amyloid_df,by = "id")
 ```
+
+## Paragraph 
+```{r}
+write_csv(mci_df,"mci_data.csv")
+```
+
 
