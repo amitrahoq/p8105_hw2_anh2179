@@ -166,3 +166,8 @@ gwynnda_cigarettes
 
 ## Problem 3
 
+```{r}
+
+```
+
+
