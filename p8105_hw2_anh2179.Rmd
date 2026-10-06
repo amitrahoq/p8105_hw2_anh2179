@@ -167,7 +167,111 @@ gwynnda_cigarettes
 ## Problem 3
 
 ```{r}
+mci_baseline =read_csv("MCI_baseline.csv",
+    skip = 1,
+    na = "."
+  ) |>
+  janitor::clean_names() |>
+  mutate(
+    sex = case_match(
+      sex,
+      1 ~ "Male",
+      0 ~ "Female"
+    ),
+    sex = as.factor(sex),
+    apoe4 = case_match(
+      apoe4,
+      1 ~ "Carrier",
+      0 ~ "Non-carrier"
+    ),
+    apoe4 = as.factor(apoe4)
+  ) |>
+  filter(
+    is.na(age_at_onset) | age_at_onset > current_age
+  )
 
+mci_baseline
+dim(mci_baseline)
 ```
 
+```{r}
+mci_baseline |>
+  summarize(
+    developed_mci = sum(!is.na(age_at_onset))
+  )
+```
+
+```{r}
+mci_baseline |>
+  summarize(
+    average_age = mean(current_age)
+  )
+```
+
+```{r}
+mci_baseline |>
+  filter(sex == "Female") |>
+  summarize(
+    proportion_apoe4 = mean(apoe4 == "Carrier")
+  )
+```
+
+```{r}
+amyloid_df =
+  read_csv("mci_amyloid.csv",
+    skip = 1,
+    na = "Na"
+  ) |>
+  janitor::clean_names() |>
+  pivot_longer(
+    baseline:time_8,
+    names_to = "visit",
+    values_to = "amyloid_42_40"
+  ) |>
+  mutate(
+    visit = case_match(
+      visit,
+      "baseline" ~ 0,
+      "time_2" ~ 2,
+      "time_4" ~ 4,
+      "time_6" ~ 6,
+      "time_8" ~ 8
+    )
+  ) |>
+  drop_na(amyloid_42_40)
+
+amyloid_df
+dim(amyloid_df)
+n_distinct(amyloid_df$study_id)
+```
+
+```{r}
+baseline_only =
+  mci_baseline |>
+  filter(!(id %in% amyloid_df$study_id)) |>
+  distinct(id)
+
+print(baseline_only)
+```
+```{r}
+amyloid_only =
+  amyloid_df |>
+  filter(!(study_id %in% mci_baseline$id)) |>
+  distinct(study_id)
+
+print(amyloid_only)
+
+```
+```{r}
+mci_df =
+  inner_join(
+    mci_baseline,
+    amyloid_df,
+    by = c("id" = "study_id")
+  )
+
+mci_df
+dim(mci_df)
+n_distinct(mci_df$id)
+```
 
