@@ -128,29 +128,8 @@ trash_wheel_df = bind_rows(mr_trash_df,professor_trash,gwynnda)
 
 The combined `trash_wheel_df` dataset consists of `r nrow(trash_wheel_df)` observations and includes data from `r trash_wheel_df |> pull(year) |> min(na.rm = TRUE)` through `r trash_wheel_df |> pull(year) |> max(na.rm = TRUE)`. Some key variables include `year`, `sports_balls`, which was rounded and converted to an integer variable, and `plastic_bottles`, which is stored as a double variable. Given the data, the total weight of trash collected by Professor Trash Wheel is `r trash_wheel_df |> filter(trash_wheel == "Professor Trash Wheel") |> pull(weight_tons) |> sum(na.rm = TRUE)` tons. The total number of cigarette butts collected by Gwynnda in June of 2022 is `r trash_wheel_df |> filter(trash_wheel == "Gwynnda", month == "June", year == 2022) |> pull(cigarette_butts) |> sum(na.rm = TRUE)`.
 
-
-## Questions about Trash Wheel Data
-```{r}
-# For available data, what was the total weight of trash collected by Professor Trash Wheel?
-professor_weight =
-  trash_wheel_df |>
-  filter(trash_wheel == "Professor Trash Wheel") |>
-  summarize(total_weight = sum(weight_tons, na.rm = TRUE)) |>
-  pull(total_weight)
-print(professor_weight)
-
-# What was the total number of cigarette butts collected by Gwynnda in June of 2022?
-gwynnda_cigarettes =
-  trash_wheel_df |>
-  filter(trash_wheel == "Gwynnda",month == "June",year == 2022) |>
-  summarize(total_cigarette_butts = sum(cigarette_butts, na.rm = TRUE)) |>
-  pull(total_cigarette_butts)
-print(gwynnda_cigarettes)
-```
-
 # Problem 3
-
-## Import, clean, and tidy the dataset of baseline demographics
+## Import, Clean, and Tidy Baseline Demographics
 ```{r}
 mci_baseline=
   read_csv("MCI_baseline.csv", show_col_types = FALSE, 
@@ -164,6 +143,9 @@ mci_baseline
 dim(mci_baseline)
 ```
 ### Paragraph about  important steps about tidying data 
+To import the baseline data, we skip the first row of the CSV because it holds variable descriptions, not data. We treat `.` and `NA` as missing values, which lets `age_at_onset` be read as numeric. We clean the variable names with `janitor::clean_names()`. We then recode `sex` (1 = Male, 0 = Female) and `apoe4` (1 = Carrier, 0 = Non-carrier) from numeric codes to labeled categories, so they are not treated as numbers. To apply the inclusion criteria, we keep participants who never developed MCI (missing `age_at_onset`) and those whose onset came after their baseline age. Participants whose onset was at or before baseline already had MCI when they entered the study, so they are removed. The cleaned dataset has `r nrow(mci_baseline)` rows and `r ncol(mci_baseline)` columns: `r paste(names(mci_baseline), collapse = ", ")`. In total, 483 participants were recruited, and `r nrow(mci_baseline)` remain after applying the inclusion criteria. Of these, `r mci_baseline |> filter(!is.na(age_at_onset)) |> nrow()` developed MCI during follow-up. The average baseline age is `r mci_baseline |> pull(current_age) |> mean(na.rm = TRUE)` years. Among women in the study, the proportion who are APOE4 carriers is `r mci_baseline |> filter(sex == "Female") |> summarize(prop = mean(apoe4 == "Carrier")) |> pull(prop)`.
+
+
 ```{r}
 mci_baseline |>
   summarize(
@@ -186,8 +168,9 @@ mci_baseline |>
   )
 ```
 
-## import, clean, and tidy the dataset of longitudinally observed biomarker values
 
+
+## Import, clean, and tidy the dataset of longitudinally observed biomarker values
 ```{r}
 amyloid_df =
   read_csv("mci_amyloid.csv",
