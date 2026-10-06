@@ -13,6 +13,7 @@ library(readxl)
 
 
 # Problem 1
+## Importing and Cleaning NYC Transit Dataset
 ```{r}
 transit_df = 
   read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
@@ -23,44 +24,46 @@ transit_df =
     line,station_name,station_latitude,station_longitude,starts_with("route"),
          entry,vending,entrance_type,ada) |>
   mutate(entry = recode_values(entry,"YES" ~ TRUE,"NO" ~ FALSE))
+dim(transit_df)
 ```
+### Paragraph about NYC Transit Dataset
+This dataset describes entrances and exits at New York City subway stations. It includes each station's line, name, and location (latitude and longitude), the routes it serves (route1–route11), and details about each entrance: whether it allows entry, whether it has a vending machine, its entrance type, and whether it is ADA compliant. I imported the data, cleaned the variable names, and kept only the columns needed for later parts of this problem. I then converted entry from yes/no to a logical variable. I decided to also denote route8–route11 as characters so they match route1–route7. The resulting dataset has 1,868 rows and 19 columns.
+The data is not tidy. Route number and route name should each be a single variable, but they are spread across 11 columns.
 
-### This dataset describes entrances and exits at New York City subway stations. It includes each station's line, name, and location (latitude and longitude), the routes it serves (route1–route11), and details about each entrance: whether it allows entry, whether it has a vending machine, its entrance type, and whether it is ADA compliant. We begin by importing the data, cleaning the variable names, and keeping only the columns needed for later parts of this problem. We convert entry from yes/no to a logical variable. During import, we also read route8–route11 as character so they match route1–route7. The resulting dataset has 1,868 rows and 19 columns. As it stands, these data are not tidy. Route number and route name should each be a single variable, but they are spread across 11 columns. To tidy the data, we would pivot the route columns from wide to long format.
-
+## Questions about NYC Transit Data  
 ```{r}
+# How many distinct stations are there? 
 transit_df |>
   select(station_name, line) |>
   distinct() |>
   nrow()
-```
 
-
-```{r}
+# How many stations are ADA compliant?
 transit_df |>
   filter(ada == TRUE) |>
   select(station_name, line) |>
   distinct() |>
   nrow()
-```
 
-```{r}
+# What proportion of station entrances / exits without vending allow entrance?
 transit_df |>
   filter(vending == "NO") |>
   pull(entry) |>
   mean()
 ```
 
-### Reformatting
+## Reformatting NYC Transit Data
 ```{r}
 transit_tidy = 
   transit_df |>
   pivot_longer(
     route1:route11,
     names_to = "route_num",
-    values_to = "route_name",
-    ) |>
-  drop_na(route_name)
+    values_to = "route_name",)
+```
 
+## Questions about Reformatting NYC Transit Data 
+```{r}
 # How many distinct stations serve the A train?
 transit_tidy |>
   filter(route_name == "A") |>
@@ -76,121 +79,91 @@ transit_tidy |>
   nrow()
 ```
 
-## Problem 2
-
+# Problem 2
+## Importing, Cleaning, Organizing and Combining Trash Wheel Datasets 
 ```{r}
 mr_trash_df =
   read_excel(
     "202610 Trash Wheel Collection Data.xlsx",
     sheet = "Mr. Trash Wheel",
-    range = "A2:N743"
-  ) |>
+    range = "A2:N743") |>
   janitor::clean_names() |>
-  drop_na(dumpster) |>
+  filter(!is.na(dumpster)) |>
   mutate(
     year= as.numeric(year), 
     plastic_bottles = as.double(plastic_bottles),
     sports_balls = as.integer(round(sports_balls)),
-    trash_wheel = "Mr. Trash Wheel"
-  )
+    trash_wheel = "Mr. Trash Wheel")
 
 professor_trash =
   read_excel(
     "202610 Trash Wheel Collection Data.xlsx",
     sheet = "Professor Trash Wheel",
-    range = "A2:M140"
-  ) |>
+    range = "A2:M140") |>
   janitor::clean_names() |>
-  drop_na(dumpster) |>
+  filter(!is.na(dumpster)) |>
   mutate(
     year= as.numeric(year),
     plastic_bottles = as.double(plastic_bottles),
-    trash_wheel = "Professor Trash Wheel"
-  )
+    trash_wheel = "Professor Trash Wheel")
+
 gwynnda =
   read_excel(
     "202610 Trash Wheel Collection Data.xlsx",
     sheet = "Gwynnda the Good Wheel of the W",
     range = "A2:L395"
-  ) |>
+    ) |>
   janitor::clean_names() |>
-  drop_na(dumpster) |>
+  filter(!is.na(dumpster)) |>
   mutate(
     year= as.numeric(year),
     plastic_bottles = as.double(plastic_bottles),
     trash_wheel = "Gwynnda"
-  )
-trash_wheel_df =
-  bind_rows(
-    mr_trash_df,
-    professor_trash,
-    gwynnda
-  )
+    )
+
+trash_wheel_df = bind_rows(mr_trash_df,professor_trash,gwynnda)
 ```
 
-## Weight 
+### Paragraph about Trash Wheel Data 
+
+The combined `trash_wheel_df` dataset consists of `r nrow(trash_wheel_df)` observations and includes data from `r trash_wheel_df |> pull(year) |> min(na.rm = TRUE)` through `r trash_wheel_df |> pull(year) |> max(na.rm = TRUE)`. Some key variables include `year`, `sports_balls`, which was rounded and converted to an integer variable, and `plastic_bottles`, which is stored as a double variable. Given the data, the total weight of trash collected by Professor Trash Wheel is `r trash_wheel_df |> filter(trash_wheel == "Professor Trash Wheel") |> pull(weight_tons) |> sum(na.rm = TRUE)` tons. The total number of cigarette butts collected by Gwynnda in June of 2022 is `r trash_wheel_df |> filter(trash_wheel == "Gwynnda", month == "June", year == 2022) |> pull(cigarette_butts) |> sum(na.rm = TRUE)`.
+
+
+## Questions about Trash Wheel Data
 ```{r}
+# For available data, what was the total weight of trash collected by Professor Trash Wheel?
 professor_weight =
   trash_wheel_df |>
   filter(trash_wheel == "Professor Trash Wheel") |>
-  summarize(
-    total_weight = sum(weight_tons, na.rm = TRUE)
-  ) |>
+  summarize(total_weight = sum(weight_tons, na.rm = TRUE)) |>
   pull(total_weight)
+print(professor_weight)
 
-professor_weight
-```
-
-
-## Cigs 
-```{r}
+# What was the total number of cigarette butts collected by Gwynnda in June of 2022?
 gwynnda_cigarettes =
   trash_wheel_df |>
-  filter(
-    trash_wheel == "Gwynnda",
-    month == "June",
-    year == 2022
-  ) |>
-  summarize(
-    total_cigarette_butts = sum(cigarette_butts, na.rm = TRUE)
-  ) |>
+  filter(trash_wheel == "Gwynnda",month == "June",year == 2022) |>
+  summarize(total_cigarette_butts = sum(cigarette_butts, na.rm = TRUE)) |>
   pull(total_cigarette_butts)
-
-gwynnda_cigarettes
-
-
+print(gwynnda_cigarettes)
 ```
 
-## Problem 3
+# Problem 3
 
+## Import, clean, and tidy the dataset of baseline demographics
 ```{r}
-mci_baseline =read_csv("MCI_baseline.csv",
+mci_baseline=
+  read_csv("MCI_baseline.csv", show_col_types = FALSE, 
     skip = 1,
-    na = c(".", ",","NA")
-  ) |>
+    na = c(".", ",","NA")) |>
   janitor::clean_names() |>
-  mutate(
-    sex = case_match(
-      sex,
-      1 ~ "Male",
-      0 ~ "Female"
-    ),
-    apoe4 = case_match(
-      apoe4,
-      1 ~ "Carrier",
-      0 ~ "Non-carrier"
-    ),
-  ) |>
-  filter(
-    is.na(age_at_onset) | age_at_onset > current_age
-  )
-
+  mutate(sex = recode_values(sex,1 ~ "Male",0 ~ "Female"),
+         apoe4 = recode_values(apoe4,1 ~ "Carrier",0 ~ "Non-carrier")) |>
+  filter(is.na(age_at_onset) | age_at_onset > current_age)
 mci_baseline
 dim(mci_baseline)
 ```
-## Short Paragraph 
-inline 
-
+### Paragraph about  important steps about tidying data 
 ```{r}
 mci_baseline |>
   summarize(
@@ -212,7 +185,9 @@ mci_baseline |>
     proportion_apoe4 = mean(apoe4 == "Carrier")
   )
 ```
-## Pargraph 
+
+## import, clean, and tidy the dataset of longitudinally observed biomarker values
+
 ```{r}
 amyloid_df =
   read_csv("mci_amyloid.csv",
@@ -228,7 +203,10 @@ amyloid_df =
 amyloid_df
 dim(amyloid_df)
 ```
-## ## Paragraph 
+
+### comment on the steps on the import process and the features of the dataset.
+
+## Checking to see if 
 ```{r}
 mci_baseline |>
   anti_join(amyloid_df, by = "id") |>
@@ -237,14 +215,16 @@ mci_baseline |>
   anti_join(mci_baseline, by = "id") |>
   nrow()
 ```
+### Paragraph on findings 
 
-## Paragraph 
+## Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained
 ```{r}
 mci_df =
   inner_join( mci_baseline,amyloid_df,by = "id")
 ```
+### Paragraph 
 
-## Paragraph 
+## Exporting CSV to directory 
 ```{r}
 write_csv(mci_df,"mci_data.csv")
 ```
