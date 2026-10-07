@@ -149,7 +149,8 @@ To import the baseline data, I skipped the first row of the CSV because it holds
 amyloid_df =
   read_csv("mci_amyloid.csv",
     skip = 1,
-    na = c("Na", ".", ",", "NA")) |>
+    na = c("Na", ".", ",", "NA"),
+    show_col_types = FALSE) |>
   janitor::clean_names() |>
   rename(id = study_id,
          baseline_year = baseline, 
@@ -166,6 +167,7 @@ dim(amyloid_df)
 To import the biomarker data, I skipped the first row of the CSV because it holds variable descriptions, not data. I cleaned the variable names with `janitor::clean_names()` and renamed `study_id` to `id` so it matches the baseline dataset. The resulting dataset has `r nrow(amyloid_df)` rows and `r ncol(amyloid_df)` columns. Each row is one participant, and the amyloid beta 42/40 ratio is recorded at baseline and at years 2, 4, 6, and 8. The data is not tidy, because time is spread across five columns, and is not specified what unit of time it is. I tried using `pivot_longer()` to create a `time` variable and an `amyloid_ratio` variable would give one row per participant per visit, just like in problem 1, but I do not think that would tidy time the way I wanted it to. Therefore, I renamed the time columns to indicate how many years had passed from baseline amyloid beta 42/40 ratio. 
 
 ## Checking Participants on Appearance only in Demographic or Biomarker Datasets
+
 ```{r}
 baseline_df |>
   anti_join(amyloid_df, by = "id") |>
@@ -174,16 +176,14 @@ baseline_df |>
   anti_join(baseline_df, by = "id") |>
   nrow()
 ```
-###  
-I used `anti_join()` to find participants who appear in only one dataset. `baseline_df |> anti_join(amyloid_df, by = "id") |> nrow()` participants are in the baseline data but not the amyloid data, and `r amyloid_df |> anti_join(baseline_df, by = "id") |> nrow()` are in the amyloid data but not the baseline data. Some of this mismatch comes from my baseline filter, `filter(is.na(age_at_onset) | age_at_onset > current_age)`. The `|` means "or," so a participant is kept if they never developed MCI or if they developed MCI after baseline. Anyone who doesn't meet either condition already had MCI at baseline and was removed, but they can still appear in the amyloid data.
+I used `anti_join()` to find participants who appear in only one dataset. `r baseline_df |> anti_join(amyloid_df, by = "id") |> nrow()` participants are in the baseline data but not the amyloid data, and `r amyloid_df |> anti_join(baseline_df, by = "id") |> nrow()` are in the amyloid data but not the baseline data.
 
 ## Combining the Demographic and Biomarker Datasets 
 ```{r}
 mci_df =
   inner_join(baseline_df,amyloid_df,by = "id")
 ```
-### Paragraph 
-so that only participants who appear in both datasets are retained
+I used `inner_join()` on `id` so that only participants who appear in both datasets are kept. The combined dataset has `r nrow(mci_df)` rows and `r ncol(mci_df)` columns, with each participant's baseline demographics and amyloid beta 42/40 ratios over follow-up.
 
 ## Exporting CSV to directory 
 ```{r}
