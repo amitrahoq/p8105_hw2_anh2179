@@ -142,35 +142,13 @@ mci_baseline=
 mci_baseline
 dim(mci_baseline)
 ```
-### Paragraph about  important steps about tidying data 
+### Paragraph about Tidying Baseline Data 
 To import the baseline data, we skip the first row of the CSV because it holds variable descriptions, not data. We treat `.` and `NA` as missing values, which lets `age_at_onset` be read as numeric. We clean the variable names with `janitor::clean_names()`. We then recode `sex` (1 = Male, 0 = Female) and `apoe4` (1 = Carrier, 0 = Non-carrier) from numeric codes to labeled categories, so they are not treated as numbers. To apply the inclusion criteria, we keep participants who never developed MCI (missing `age_at_onset`) and those whose onset came after their baseline age. Participants whose onset was at or before baseline already had MCI when they entered the study, so they are removed. The cleaned dataset has `r nrow(mci_baseline)` rows and `r ncol(mci_baseline)` columns: `r paste(names(mci_baseline), collapse = ", ")`. In total, 483 participants were recruited, and `r nrow(mci_baseline)` remain after applying the inclusion criteria. Of these, `r mci_baseline |> filter(!is.na(age_at_onset)) |> nrow()` developed MCI during follow-up. The average baseline age is `r mci_baseline |> pull(current_age) |> mean(na.rm = TRUE)` years. Among women in the study, the proportion who are APOE4 carriers is `r mci_baseline |> filter(sex == "Female") |> summarize(prop = mean(apoe4 == "Carrier")) |> pull(prop)`.
 
 
-```{r}
-mci_baseline |>
-  summarize(
-    developed_mci = sum(!is.na(age_at_onset))
-  )
-```
-
-```{r}
-mci_baseline |>
-  summarize(
-    average_age = mean(current_age)
-  )
-```
-
-```{r}
-mci_baseline |>
-  filter(sex == "Female") |>
-  summarize(
-    proportion_apoe4 = mean(apoe4 == "Carrier")
-  )
-```
 
 
-
-## Import, clean, and tidy the dataset of longitudinally observed biomarker values
+## Import, Clean, and Tidy Amyloid Biomarker Data
 ```{r}
 amyloid_df =
   read_csv("mci_amyloid.csv",
@@ -189,7 +167,7 @@ dim(amyloid_df)
 
 ### comment on the steps on the import process and the features of the dataset.
 
-## Checking to see if 
+## Checking 
 ```{r}
 mci_baseline |>
   anti_join(amyloid_df, by = "id") |>
