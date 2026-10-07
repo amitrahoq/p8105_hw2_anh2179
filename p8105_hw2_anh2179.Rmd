@@ -58,7 +58,7 @@ transit_tidy =
   pivot_longer(
     route1:route11,
     names_to = "route_num",
-    values_to = "route_name",)
+    values_to = "route_name")
 ```
 
 ## Questions about Reformatting NYC Transit Data 
@@ -149,19 +149,23 @@ To import the baseline data, I skipped the first row of the CSV because it holds
 amyloid_df =
   read_csv("mci_amyloid.csv",
     skip = 1,
-    na = c("Na", ".", ",")
-  ) |>
+    na = c("Na", ".", ",")) |>
   janitor::clean_names() |>
-  rename(
-    id = study_id,
-    baseline_years = baseline
-  )
-
+  rename(id = study_id,
+         baseline_years = baseline) |>
+   pivot_longer(
+    baseline_years:time_8,
+    names_to = "time",
+    values_to = "amyloid_ratio") |>
+  mutate(time = recode_values(time,
+    "baseline" ~ 0, "time_2" ~ 2, "time_4" ~ 4, "time_6" ~ 6, "time_8" ~ 8))
+  
 amyloid_df
 dim(amyloid_df)
 ```
 
-### comment on the steps on the import process and the features of the dataset.
+### Paragraph about Import Process and Features on Biomarkers
+BLAH  
 
 ## Checking 
 ```{r}
@@ -173,13 +177,15 @@ mci_baseline |>
   nrow()
 ```
 ### Paragraph on findings 
+BLAH
 
-## Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained
+## Combining the Demographic and Biomarker Datasets 
 ```{r}
 mci_df =
   inner_join( mci_baseline,amyloid_df,by = "id")
 ```
 ### Paragraph 
+so that only participants who appear in both datasets are retained
 
 ## Exporting CSV to directory 
 ```{r}
