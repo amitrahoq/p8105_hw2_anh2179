@@ -16,7 +16,7 @@ library(readxl)
 ## Importing and Cleaning NYC Transit Dataset
 ```{r}
 transit_df = 
-  read_csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+  read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
   col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) |>
   
   janitor::clean_names() |>
@@ -83,7 +83,7 @@ transit_tidy |>
 ```{r}
 mr_trash_df =
   read_excel(
-    "202610 Trash Wheel Collection Data.xlsx",
+    "data/202610 Trash Wheel Collection Data.xlsx",
     sheet = "Mr. Trash Wheel",
     range = "A2:N743") |>
   janitor::clean_names() |>
@@ -96,7 +96,7 @@ mr_trash_df =
 
 professor_trash =
   read_excel(
-    "202610 Trash Wheel Collection Data.xlsx",
+    "data/202610 Trash Wheel Collection Data.xlsx",
     sheet = "Professor Trash Wheel",
     range = "A2:M140") |>
   janitor::clean_names() |>
@@ -108,7 +108,7 @@ professor_trash =
 
 gwynnda =
   read_excel(
-    "202610 Trash Wheel Collection Data.xlsx",
+    "data/202610 Trash Wheel Collection Data.xlsx",
     sheet = "Gwynnda the Good Wheel of the W",
     range = "A2:L395"
     ) |>
@@ -131,7 +131,7 @@ The combined `trash_wheel_df` dataset consists of `r nrow(trash_wheel_df)` obser
 ## Import, Clean, and Tidy Baseline Demographics
 ```{r}
 baseline_df=
-  read_csv("MCI_baseline.csv", show_col_types = FALSE, 
+  read_csv("data/MCI_baseline.csv", show_col_types = FALSE, 
     skip = 1,
     na = c(".", ",")) |>
   janitor::clean_names() |>
@@ -147,7 +147,7 @@ To import the baseline data, I skipped the first row of the CSV because it holds
 ## Import, Clean, and Tidy Amyloid Biomarker Data
 ```{r}
 amyloid_df =
-  read_csv("mci_amyloid.csv",
+  read_csv("data/mci_amyloid.csv",
     skip = 1,
     na = c("Na", ".", ",", "NA"),
     show_col_types = FALSE) |>
